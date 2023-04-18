@@ -1,6 +1,9 @@
 package com.example.mathservice.MathserviceControlletTest;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import com.example.mathservice.models.Validator;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import com.example.mathservice.models.Vector;
 import com.example.mathservice.models.VectorService;
@@ -30,4 +33,14 @@ public class MathserviceControllerTest {
         double result = vectorService.calculateYProjection(vector);
         assertEquals(4.0, result);
     }
+
+    @Test
+    public void testException() {
+        Validator validator = new Validator();
+        Vector vector = new Vector(110.0, 0, 3, 4);
+        assertThrows(IllegalArgumentException.class, () -> {
+            validator.validate(vector.getX1());
+        });
+   }
+
 }

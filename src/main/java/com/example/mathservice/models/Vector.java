@@ -10,8 +10,6 @@ public class Vector {
     private double y1;
     private double y2;
 
-    static Logger logger = LoggerFactory.getLogger(Vector.class);
-
     public Vector(double x1, double y1, double x2, double y2) {
         this.x1 = x1;
         this.y1 = y1;
@@ -19,14 +17,6 @@ public class Vector {
         this.y2 = y2;
     }
 
-    public void validation() throws RuntimeException {
-        //if(x1 > 100.0)
-        if(!Double.isFinite(x1))
-        {
-            logger.info("The value of X1 is greater than double range ({})", x1);
-            throw new IllegalArgumentException("The value of X1 is greater than double range");
-        }
-    }
 
     public double getX1() {
         return x1;
