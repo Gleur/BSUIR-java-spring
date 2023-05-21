@@ -1,14 +1,12 @@
 package com.example.mathservice.models;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class Vector {
     private double x1;
     private double x2;
     private double y1;
     private double y2;
+    private Long id ;
 
     public Vector(double x1, double y1, double x2, double y2) {
         this.x1 = x1;
@@ -16,7 +14,6 @@ public class Vector {
         this.x2 = x2;
         this.y2 = y2;
     }
-
 
     public double getX1() {
         return x1;
@@ -33,4 +30,8 @@ public class Vector {
     public double getY2() {
         return y2;
     }
+
+    public Long getID() { return id; }
+
+    public void setID(Long ID) { this.id = id; }
 }
