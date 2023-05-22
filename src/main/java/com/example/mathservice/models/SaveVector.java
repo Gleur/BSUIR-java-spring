@@ -13,12 +13,6 @@ public class SaveVector {
 
     private Double norm, Xproj, Yproj;
 
-    public Long getId() {
-        return id;
-    }
-    public void setId() {
-        this.id = id;
-    }
     public Double getNorm() {
         return norm;
     }
@@ -37,8 +31,4 @@ public class SaveVector {
     public void setYproj(Double YProj) {
         this.Yproj = YProj;
     }
-
-
-
-
 }

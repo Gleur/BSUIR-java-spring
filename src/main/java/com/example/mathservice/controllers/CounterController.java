@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class CounterController {
 
-    Logger logger = LoggerFactory.getLogger(MathserviceController.class);
+    Logger logger = LoggerFactory.getLogger(CounterController.class);
 
     @GetMapping("/counter")
     public ResponseEntity counterService() {
