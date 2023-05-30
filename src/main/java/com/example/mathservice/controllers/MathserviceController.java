@@ -19,10 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
@@ -36,7 +33,6 @@ public class MathserviceController {
 
     @Autowired
     private SaveVectorRepository saveVectorRepository;
-
 
     Logger logger = LoggerFactory.getLogger(MathserviceController.class);
     VectorService vectorService = new VectorService();
@@ -82,13 +78,16 @@ public class MathserviceController {
         cache.put(cacheKey, resultString);
         logger.info("Result cached with key: {}", cacheKey);
 
+
         saveVectorRepository.save(saveVector);
 
         return ResponseEntity.ok(result + ", counter: " + Counter.getCounter());
     }
 
     //http://localhost:8080/async?X1=10.0&Y1=0.0&X2=3.0&Y2=7.0
-    @RequestMapping(value = "/async", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/async",
+            method = RequestMethod.GET,
+            produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> asyncService(@RequestParam("X1") double x1,
                                                 @RequestParam("Y1") double y1,
                                                 @RequestParam("X2") double x2,
@@ -98,12 +97,12 @@ public class MathserviceController {
         String cacheKey = String.format("%f_%f_%f_%f", x1, y1, x2, y2);
         String cachedResult = cache.get(cacheKey);
         if (cachedResult != null) {
-            logger.info("Result found in cache");
+            logger.info("Result found in cache, no further waiting is required");
             return ResponseEntity.ok(cachedResult);
         }
 
         try {
-            CompletableFuture<String> calculationFuture  = calculateVectorAsync(vector)
+            calculateVectorAsync(vector)
                     .thenApply(response -> {
                         cache.put(cacheKey, response);
                         logger.info("Result cached with key: {}", cacheKey);
@@ -127,8 +126,6 @@ public class MathserviceController {
     @Async
     public CompletableFuture<String> calculateVectorAsync(Vector vector) {
         try {
-            logger.info("VectorService initialization");
-            logger.info("Output started");
 
             SaveVector saveVector = new SaveVector();
 
@@ -147,17 +144,20 @@ public class MathserviceController {
                         saveVector.setXproj(xProjection);
                         saveVector.setYproj(yProjection);
 
+                        saveVectorRepository.save(saveVector);
                         JSONObject result = new JSONObject();
                         try {
-                            result.put("VectorNorm: ", norm);
-                            result.put("X projection: ", xProjection);
-                            result.put("Y projection: ", yProjection);
+           //                 result.put("VectorNorm: ", norm);
+           //                 result.put("X projection: ", xProjection);
+           //                 result.put("Y projection: ", yProjection);
+                            result.put("ID:", saveVector.geteId());
                         } catch (JSONException e) {
                             throw new RuntimeException(e);
                         }
 
-                        saveVectorRepository.save(saveVector);
-
+             //           saveVectorRepository.save(saveVector);
+             //           result.put("ID:", saveVector.geteId());
+                        ///return saveVector.getId(); // Возвращаем идентификатор сохраненного вектора
                         return result.toString();
                     });
         } catch (IllegalArgumentException ex) {
@@ -185,53 +185,67 @@ public class MathserviceController {
         logger.info("Received {} parameters", params.size());
 
         List<Double> norms = new ArrayList<>();
-        List<Double> Xpros = new ArrayList<>();
-        List<Double> Ypros = new ArrayList<>();
+        List<Double> Xproj = new ArrayList<>();
+        List<Double> Yproj = new ArrayList<>();
 
-        for (Map<String, Double> solution : params) {
-            Double x1 = solution.get("X1");
-            Double y1 = solution.get("Y1");
-            Double x2 = solution.get("X2");
-            Double y2 = solution.get("Y2");
+        JSONObject result = new JSONObject();
+        //LinkedHashMap<String, List<Double>> result = new LinkedHashMap<>();
+
+        params.forEach(param -> {
+            Double x1 = param.get("X1");
+            Double y1 = param.get("Y1");
+            Double x2 = param.get("X2");
+            Double y2 = param.get("Y2");
 
             String cacheKey = String.format("%f_%f_%f_%f", x1, y1, x2, y2);
             String cachedResult = cache.get(cacheKey);
             if (cachedResult != null) {
                 logger.info("Result found in cache");
-                //      return ResponseEntity.ok(cachedResult + " (from cache), counter: " + Counter.getCounter());
             }
             Vector vector = new Vector(x1, y1, x2, y2);
             logger.info("VectorService initialization");
 
             logger.info("Adding to lists");
             norms.add(vectorService.calculateNorm(vector));
-            Xpros.add(vectorService.calculateXProjection(vector));
-            Ypros.add(vectorService.calculateYProjection(vector));
+            Xproj.add(vectorService.calculateXProjection(vector));
+            Yproj.add(vectorService.calculateYProjection(vector));
             logger.info("Added to lists");
-        }
-        JSONObject result = new JSONObject();
+        });
+
+        result.put("norms", norms);
+        result.put("Xprojections", Xproj);
+        result.put("Yprojections", Yproj);
+
         result.put("minX1", params.stream().mapToDouble(map -> map.get("X1")).min().orElse(Double.MIN_VALUE));
         result.put("averageX1", params.stream().mapToDouble(map -> map.get("X1")).average().orElse(Double.MIN_VALUE));
         result.put("maxX1", params.stream().mapToDouble(map -> map.get("X1")).max().orElse(Double.MIN_VALUE));
+
         result.put("minY1", params.stream().mapToDouble(map -> map.get("Y1")).min().orElse(Double.MIN_VALUE));
         result.put("averageY1", params.stream().mapToDouble(map -> map.get("Y1")).average().orElse(Double.MIN_VALUE));
         result.put("maxY1", params.stream().mapToDouble(map -> map.get("Y1")).max().orElse(Double.MIN_VALUE));
+
         result.put("minX2", params.stream().mapToDouble(map -> map.get("X2")).min().orElse(Double.MIN_VALUE));
         result.put("averageX2", params.stream().mapToDouble(map -> map.get("X2")).average().orElse(Double.MIN_VALUE));
         result.put("maxX2", params.stream().mapToDouble(map -> map.get("X2")).max().orElse(Double.MIN_VALUE));
+
         result.put("minY2", params.stream().mapToDouble(map -> map.get("Y2")).min().orElse(Double.MIN_VALUE));
         result.put("averageY2", params.stream().mapToDouble(map -> map.get("Y2")).average().orElse(Double.MIN_VALUE));
-        result.put("maxY2", params.stream().mapToDouble(map -> map.get("Y2")).max().orElse(Double.MIN_VALUE));logger.info("did half");Double averageNorm = norms.stream().mapToDouble(Double::doubleValue).sum() / norms.size();logger.info("1");result.put("minNorm", Collections.min(norms));result.put("averageNorm", averageNorm);
+        result.put("maxY2", params.stream().mapToDouble(map -> map.get("Y2")).max().orElse(Double.MIN_VALUE));
+
+        Double averageNorm = norms.stream().mapToDouble(Double::doubleValue).sum() / norms.size();
+        result.put("minNorm", Collections.min(norms));
+        result.put("averageNorm", averageNorm);
         result.put("maxNorm", Collections.max(norms));
-        Double averageXPro = Xpros.stream().mapToDouble(Double::doubleValue).sum() / Xpros.size();
-        logger.info("2");
-        result.put("minXpro", Collections.min(Xpros));
+
+        Double averageXPro = Xproj.stream().mapToDouble(Double::doubleValue).sum() / Xproj.size();
+        result.put("minXpro", Collections.min(Xproj));
         result.put("averageXpro", averageXPro);
-        result.put("maxXpro", Collections.max(Xpros));
-        Double averageYpro = Ypros.stream().mapToDouble(Double::doubleValue).sum() / Xpros.size();
-        result.put("minYpro", Collections.min(Ypros));
+        result.put("maxXpro", Collections.max(Xproj));
+
+        Double averageYpro = Yproj.stream().mapToDouble(Double::doubleValue).sum() / Xproj.size();
+        result.put("minYpro", Collections.min(Yproj));
         result.put("averageYpro", averageYpro);
-        result.put("maxYpro", Collections.max(Ypros));
+        result.put("maxYpro", Collections.max(Yproj));
 
         logger.info("Output");
         return result.toString();

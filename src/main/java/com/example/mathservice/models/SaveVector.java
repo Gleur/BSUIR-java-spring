@@ -13,6 +13,10 @@ public class SaveVector {
 
     private Double norm, Xproj, Yproj;
 
+    public Long geteId() {
+        return id;
+    }
+
     public Double getNorm() {
         return norm;
     }
